@@ -33,12 +33,9 @@ def generate_response(data):
 
 app = Flask(__name__)
 
-@app.route('/echo', methods=['POST'])
-def echo():
-    print("echo")
-    data = request.json
-    email = generate_response(data)
-    return jsonify({ 'message': email })
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({ 'message': "hello" })
 
 @app.route('/create', methods=['POST'])
 def create():
