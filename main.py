@@ -3,20 +3,12 @@ from time import sleep
 from flask_cors import CORS
 from openai import OpenAI
 from dotenv import load_dotenv
-from linkedin_scraper import actions
-from person import Person
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import os
 load_dotenv()
 
 api_key = os.getenv('OPENAI_API_KEY')
 client = OpenAI(api_key=api_key)
 
-email = os.getenv('LINKEDIN_EMAIL')
-password = os.getenv('LINKEDIN_PASSWORD')
-chrome_options = Options()
-chrome_options.add_argument("--headless=new")
 
 def generate_response(data):
     company_name = data['companyName']
@@ -53,16 +45,7 @@ def create():
     email = generate_response(data)
     return jsonify({ 'message': email })
 
-@app.route('/scrape', methods=['POST'])
-def scrape():
-    data = request.get_json()
-    url = data['profileUrl']
-    driver = webdriver.Chrome(options=chrome_options)
-    actions.login(driver, email, password)
-    person = Person(linkedin_url=url, driver=driver)
-    response = person.serialize_person()
-    print(response)
-    return jsonify(response)
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))

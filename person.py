@@ -425,6 +425,7 @@ class Person(Scraper):
         return {
             "linkedin_url": self.linkedin_url,
             "name": self.name,
+            "location": self.location,
             "email": self.email,
             "about": self.about,
             "experiences": [self.serialize_experience(exp) for exp in self.experiences],
