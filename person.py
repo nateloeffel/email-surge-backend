@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from linkedin_scraper.objects import Experience, Education, Scraper, Interest, Accomplishment, Contact
 import os
 from linkedin_scraper import selectors
@@ -12,7 +12,7 @@ from linkedin_scraper import selectors
 class Person(Scraper):
 
     __TOP_CARD = "pv-top-card--photo"
-    __WAIT_FOR_ELEMENT_TIMEOUT = 5
+    __WAIT_FOR_ELEMENT_TIMEOUT = 8
 
     # https://github.com/joeyism/linkedin_scraper/pull/195/commits/dfe13d53cf9fae8d4513789be429d47fba58fe42
     position_title = ''
@@ -178,11 +178,19 @@ class Person(Scraper):
             description = ""
             if position_summary_text:
                 # Check if multiple descriptions are present
-                if len(position_summary_text.find_elements(By.XPATH, ".//li")) > 1:
-                    description_elements = position_summary_text.find_elements(By.XPATH, ".//li")
-                    description = " ".join([elem.text for elem in description_elements])
-                else:
-                    description = position_summary_text.text
+                # if len(position_summary_text.find_elements(By.XPATH, ".//li")) > 1:
+                #     print("more than one position summary")
+                #     description_elements = position_summary_text.find_elements(By.XPATH, ".//li")
+                #     description = " ".join([elem.text for elem in description_elements])
+                # else:
+                #     description = position_summary_text.text
+
+                if position_summary_text:
+                    visible_texts = position_summary_text.find_elements(By.XPATH,
+                                                                        ".//span[not(contains(@class, 'visually-hidden'))]")
+                    description = " ".join([elem.text for elem in visible_texts])
+
+            print(description)
 
             # Create and add Experience object
             experience = Experience(
@@ -204,7 +212,11 @@ class Person(Scraper):
         main = self.wait_for_element_to_load(by=By.TAG_NAME, name="main")
         self.scroll_to_half()
         self.scroll_to_bottom()
-        main_list = self.wait_for_element_to_load(name="pvs-list", base=main)
+        try:
+            main_list = self.wait_for_element_to_load(name="pvs-list", base=main)
+        except TimeoutException:
+            print("No educations found")
+            return None
         for position in main_list.find_elements(By.CLASS_NAME,"pvs-entity--padded"):
             institution_logo_elem, position_details = position.find_elements(By.XPATH,"*")
 
@@ -229,9 +241,11 @@ class Person(Scraper):
                 from_date = None
                 to_date = None
 
-
-
-            description = position_summary_text.text if position_summary_text else ""
+            description = ""
+            if position_summary_text:
+                visible_texts = position_summary_text.find_elements(By.XPATH,
+                                                                    ".//span[not(contains(@class, 'visually-hidden'))]")
+                description = " ".join([elem.text for elem in visible_texts])
 
             education = Education(
                 from_date=from_date,
@@ -244,11 +258,13 @@ class Person(Scraper):
             self.add_education(education)
 
     def get_name_and_location(self):
-        top_panels = self.driver.find_elements(By.CLASS_NAME,"vEBOKgksgadKrpghoOSCroigFIfhUPMXuRJWM")
-        self.name = top_panels[0].find_elements(By.XPATH,"*")[0].text
-        # print("Set Name to " + self.name + "")
-        self.location = top_panels[1].find_element(By.TAG_NAME,"span").text
-        # print("Set Location to " + self.location + "")
+        top_panels = self.driver.find_elements(By.CLASS_NAME, "pv-text-details__about-this-profile-entrypoint")
+        self.name = top_panels[0].find_elements(By.XPATH, "*")[0].text
+        try:
+            self.location = self.driver.find_element(By.XPATH,
+                                                     '//*[@class="artdeco-card ember-view pv-top-card"]/div[2]/div[2]/div[2]/span[1]').text
+        except NoSuchElementException:
+            self.location = "Fail"
 
     def get_email(self):
         url = os.path.join(self.linkedin_url, "overlay/contact-info")
