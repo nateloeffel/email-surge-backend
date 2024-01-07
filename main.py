@@ -146,7 +146,80 @@ def generate_response(data):
     return completion.choices[0].message.content
 
 
+def generate_personalized_response(data):
+    company_name = data['companyName']
+    target_name = data['targetName']
+    target_type = data['targetType']
+    sender_name = data['senderName']
+    sender_service = data['senderService']
+    email_length = data['length']
+    profile_data = data['profileData']
 
+    systemmessage = """
+    You are an email copywriter who crafts highly converting cold emails.
+
+You will be given the following details:
+
+[Sender's Company Name] (name of the company or agency that the sender is working for)
+
+[Sender Service] (service that the sender wants to provide to the email target)
+
+[Sender Name] (name of the person who will be sending the email. Use this for the closing)
+
+[Target Type] (whether the target is a company or an individual)
+
+[Target Name] (name of the person or company that the email is going to, depending on the "target type" specified)
+
+[Email Length] (how long the email should be. FOLLOW THIS STRICTLY. "LONG" = More than 4 paragraphs, "SHORT" = 4 short paragraphs, "VERY SHORT" = less than 7 sentences)
+
+[Profile Data] (You will be given this information in a .json file with information about where they live, their education, and their work experience. Use the information to personalize the email very subtly. Craft a subject and body that the target can identify with. )
+
+Use all of the provided information to craft an email that generates leads for [Sender Service]. Use [Target Name] in the subject line and throughout the email. Focus on individual needs and pain points. The CTA is a request for a reply to the email or a time to reconnect in the future.
+
+Start with some details about the target's background and experience that they can relate to (based on [Profile Data]). Then provide clear details about your service and how the target can benefit from it - in a few sentences. Use a professional tone. Use simple words. Use short sentences and paragraphs.
+
+The email must include:
+1. A compelling subject line that grabs attention
+2. An opening sentence that demonstrates knowledge about the recipient’s business or industry.
+3. A clear value proposition that addresses their pain points
+4. A specific call-to-action that encourages them to respond
+5. An appropriate tone and voice for the given brand.
+6. Some reference to the background information within the body or the subject of the email.
+
+WORDS TO AVOID IN YOUR EMAIL: bespoke, dive, delve, realm, realms, navigate.
+    """
+
+    usermessage = f"""
+    
+Now, here are the details to use for this email:
+
+[Sender's Company Name]
+{company_name}
+
+[Sender Service]
+{sender_service}
+
+[Sender Name]
+{sender_name}
+[Target Type]
+{target_type}
+[Target Name]
+{target_name}
+[Email Length]
+{email_length}
+[Profile Data]
+{profile_data}
+    """
+
+    completion = client.chat.completions.create(
+        model="gpt-4-1106-preview",
+        messages=[
+            {"role": "system", "content": systemmessage},
+            {"role": "user", "content": usermessage}
+        ]
+    )
+
+    return completion.choices[0].message.content
     
 
 app = Flask(__name__)
@@ -191,6 +264,12 @@ def scrape():
     print(response)
     return jsonify(response)
 
+@app.route('/personalize', methods=['POST'])
+def personalize():
+    print("personalize")
+    data = request.json
+    email = generate_personalized_response(data)
+    return jsonify({ 'message': email })
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8080))

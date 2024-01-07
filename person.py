@@ -12,7 +12,7 @@ from linkedin_scraper import selectors
 class Person(Scraper):
 
     __TOP_CARD = "pv-top-card--photo"
-    __WAIT_FOR_ELEMENT_TIMEOUT = 8
+    __WAIT_FOR_ELEMENT_TIMEOUT = 15
 
     # https://github.com/joeyism/linkedin_scraper/pull/195/commits/dfe13d53cf9fae8d4513789be429d47fba58fe42
     position_title = ''
@@ -260,11 +260,9 @@ class Person(Scraper):
     def get_name_and_location(self):
         top_panels = self.driver.find_elements(By.CLASS_NAME, "pv-text-details__about-this-profile-entrypoint")
         self.name = top_panels[0].find_elements(By.XPATH, "*")[0].text
-        try:
-            self.location = self.driver.find_element(By.XPATH,
-                                                     '//*[@class="artdeco-card ember-view pv-top-card"]/div[2]/div[2]/div[2]/span[1]').text
-        except NoSuchElementException:
-            self.location = "Fail"
+        location_xpath = "//div[contains(@class, 'mt2 relative')]/div[last()]/span[1]"
+        element = self.driver.find_element(By.XPATH, location_xpath)
+        self.location = element.text
 
     def get_email(self):
         url = os.path.join(self.linkedin_url, "overlay/contact-info")
@@ -326,75 +324,75 @@ class Person(Scraper):
         # get education
         self.get_educations()
 
-        driver.get(self.linkedin_url)
-
-        # get interest
-        try:
-
-            _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
-                EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        "//*[@class='pv-profile-section pv-interests-section artdeco-container-card artdeco-card ember-view']",
-                    )
-                )
-            )
-            interestContainer = driver.find_element(By.XPATH,
-                "//*[@class='pv-profile-section pv-interests-section artdeco-container-card artdeco-card ember-view']"
-            )
-            for interestElement in interestContainer.find_elements(By.XPATH,
-                "//*[@class='pv-interest-entity pv-profile-section__card-item ember-view']"
-            ):
-                interest = Interest(
-                    interestElement.find_element(By.TAG_NAME, "h3").text.strip()
-                )
-                self.add_interest(interest)
-        except:
-            pass
-
-        # get accomplishment
-        try:
-            _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
-                EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        "//*[@class='pv-profile-section pv-accomplishments-section artdeco-container-card artdeco-card ember-view']",
-                    )
-                )
-            )
-            acc = driver.find_element(By.XPATH,
-                "//*[@class='pv-profile-section pv-accomplishments-section artdeco-container-card artdeco-card ember-view']"
-            )
-            for block in acc.find_elements(By.XPATH,
-                "//div[@class='pv-accomplishments-block__content break-words']"
-            ):
-                category = block.find_element(By.TAG_NAME, "h3")
-                for title in block.find_element(By.TAG_NAME,
-                    "ul"
-                ).find_elements(By.TAG_NAME, "li"):
-                    accomplishment = Accomplishment(category.text, title.text)
-                    self.add_accomplishment(accomplishment)
-        except:
-            pass
-
-        # get connections
-        try:
-            driver.get("https://www.linkedin.com/mynetwork/invite-connect/connections/")
-            _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "mn-connections"))
-            )
-            connections = driver.find_element(By.CLASS_NAME, "mn-connections")
-            if connections is not None:
-                for conn in connections.find_elements(By.CLASS_NAME, "mn-connection-card"):
-                    anchor = conn.find_element(By.CLASS_NAME, "mn-connection-card__link")
-                    url = anchor.get_attribute("href")
-                    name = conn.find_element(By.CLASS_NAME, "mn-connection-card__details").find_element(By.CLASS_NAME, "mn-connection-card__name").text.strip()
-                    occupation = conn.find_element(By.CLASS_NAME, "mn-connection-card__details").find_element(By.CLASS_NAME, "mn-connection-card__occupation").text.strip()
-
-                    contact = Contact(name=name, occupation=occupation, url=url)
-                    self.add_contact(contact)
-        except:
-            connections = None
+        # driver.get(self.linkedin_url)
+        #
+        # # get interest
+        # try:
+        #
+        #     _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
+        #         EC.presence_of_element_located(
+        #             (
+        #                 By.XPATH,
+        #                 "//*[@class='pv-profile-section pv-interests-section artdeco-container-card artdeco-card ember-view']",
+        #             )
+        #         )
+        #     )
+        #     interestContainer = driver.find_element(By.XPATH,
+        #         "//*[@class='pv-profile-section pv-interests-section artdeco-container-card artdeco-card ember-view']"
+        #     )
+        #     for interestElement in interestContainer.find_elements(By.XPATH,
+        #         "//*[@class='pv-interest-entity pv-profile-section__card-item ember-view']"
+        #     ):
+        #         interest = Interest(
+        #             interestElement.find_element(By.TAG_NAME, "h3").text.strip()
+        #         )
+        #         self.add_interest(interest)
+        # except:
+        #     pass
+        #
+        # # get accomplishment
+        # try:
+        #     _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
+        #         EC.presence_of_element_located(
+        #             (
+        #                 By.XPATH,
+        #                 "//*[@class='pv-profile-section pv-accomplishments-section artdeco-container-card artdeco-card ember-view']",
+        #             )
+        #         )
+        #     )
+        #     acc = driver.find_element(By.XPATH,
+        #         "//*[@class='pv-profile-section pv-accomplishments-section artdeco-container-card artdeco-card ember-view']"
+        #     )
+        #     for block in acc.find_elements(By.XPATH,
+        #         "//div[@class='pv-accomplishments-block__content break-words']"
+        #     ):
+        #         category = block.find_element(By.TAG_NAME, "h3")
+        #         for title in block.find_element(By.TAG_NAME,
+        #             "ul"
+        #         ).find_elements(By.TAG_NAME, "li"):
+        #             accomplishment = Accomplishment(category.text, title.text)
+        #             self.add_accomplishment(accomplishment)
+        # except:
+        #     pass
+        #
+        # # get connections
+        # try:
+        #     driver.get("https://www.linkedin.com/mynetwork/invite-connect/connections/")
+        #     _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
+        #         EC.presence_of_element_located((By.CLASS_NAME, "mn-connections"))
+        #     )
+        #     connections = driver.find_element(By.CLASS_NAME, "mn-connections")
+        #     if connections is not None:
+        #         for conn in connections.find_elements(By.CLASS_NAME, "mn-connection-card"):
+        #             anchor = conn.find_element(By.CLASS_NAME, "mn-connection-card__link")
+        #             url = anchor.get_attribute("href")
+        #             name = conn.find_element(By.CLASS_NAME, "mn-connection-card__details").find_element(By.CLASS_NAME, "mn-connection-card__name").text.strip()
+        #             occupation = conn.find_element(By.CLASS_NAME, "mn-connection-card__details").find_element(By.CLASS_NAME, "mn-connection-card__occupation").text.strip()
+        #
+        #             contact = Contact(name=name, occupation=occupation, url=url)
+        #             self.add_contact(contact)
+        # except:
+        #     connections = None
 
         if close_on_complete:
             driver.quit()
