@@ -3,6 +3,8 @@ Overview of Project
 
 ![Excalidraw Image](./docs/overview.png)
 
+[How to use Email Surge](https://youtu.be/eH4tep5lYIY)
+
 
 ## Technologies Used
 
